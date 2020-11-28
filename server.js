@@ -13,17 +13,15 @@ let bodyParser = require('body-parser')
 app.use(bodyParser.raw({ type: "*/*" }))
 
 let credentials = new Map()
-let channels = new Map()
-let token = ""
+let tokens = new Map()
+let channels = new Set()
+let usersInChannel = new Set()
 
 // This endpoint lets users create an account
 app.post("/signup", (req, res) => {
     let parsed = JSON.parse(req.body)
     let username = parsed.username
     let password = parsed.password
-    console.log("username", username)
-    console.log("password", password)
-
 
     if (username == undefined) {
         res.send(JSON.stringify({ success: false, reason: "username field missing" }))
@@ -42,6 +40,8 @@ app.post("/signup", (req, res) => {
 
     credentials.set(username, password)
     res.send(JSON.stringify({ success: true }))
+    console.log("CREDENTIALS: ")
+    console.log(credentials)
 
 })
 
@@ -51,8 +51,8 @@ app.post("/login", (req, res) => {
     let username = parsed.username
     let password = parsed.password
     let expectedPassword = credentials.get(username)
-    console.log("username", username)
-    console.log("password", password)
+    let token = ""
+    console.log("expectedPassword", expectedPassword)
 
 
     if (username == undefined) {
@@ -75,8 +75,10 @@ app.post("/login", (req, res) => {
       return
     }
   
-     token = "" + Math.random().toString(36).substr(2)
-  
+    token = username + Math.random().toString(36).substr(2)
+    tokens.set(token, username)
+    console.log("TOKENS: ")
+    console.log(tokens)
     res.send(JSON.stringify({ success: true, token: token }))
 })
 
@@ -92,7 +94,7 @@ app.post("/create-channel", (req, res) => {
       return
     }
   
-    if (tokenId != token) {
+    if (!tokens.has(tokenId)) {
       res.send(JSON.stringify({ success: false, reason: "Invalid token" }))
       return
     }
@@ -107,10 +109,91 @@ app.post("/create-channel", (req, res) => {
         return
     }
   
-    channels.set(channelName)
+    channels.add(channelName)
     res.send(JSON.stringify({ success: true }))
+    console.log("CHANNELS: ")
+    console.log(channels)
 })
 
+
+//TODO: User is banned
+//The join-channel endpoint lets users join a channel. 
+app.post("/join-channel", (req, res) => {
+    let parsed = JSON.parse(req.body)
+    let channelName = parsed.channelName
+    let tokenId = req.headers.token
+    
+    if (tokenId == undefined) {
+      res.send(JSON.stringify({ success: false, reason: "token field missing" }))
+      return
+    }
+  
+    if (!tokens.has(tokenId)) {
+      res.send(JSON.stringify({ success: false, reason: "Invalid token" }))
+      return
+    }
+  
+    if (channelName == undefined) {
+      res.send(JSON.stringify({ success: false, reason: "channelName field missing" }))
+      return
+    }
+  
+    if (!channels.has(channelName)) {
+        res.send(JSON.stringify({ success: false, reason: "Channel does not exist" }))
+        return
+    }
+  
+    if (usersInChannel.has(tokenId+channelName)) {
+      res.send(JSON.stringify({ success: false, reason: "User has already joined" }))
+      return
+    }
+  
+    usersInChannel.add(tokenId+channelName)
+    res.send(JSON.stringify({ success: true }))
+    console.log("USERS IN CHANNEL: ")
+    console.log(usersInChannel)
+  
+})
+
+//The join-channel endpoint lets users join a channel. 
+app.post("/leave-channel", (req, res) => {
+    let parsed = JSON.parse(req.body)
+    let channelName = parsed.channelName
+    let tokenId = req.headers.token
+    
+    if (tokenId == undefined) {
+      res.send(JSON.stringify({ success: false, reason: "token field missing" }))
+      return
+    }
+  
+    if (!tokens.has(tokenId)) {
+      res.send(JSON.stringify({ success: false, reason: "Invalid token" }))
+      return
+    }
+  
+    if (channelName == undefined) {
+      res.send(JSON.stringify({ success: false, reason: "channelName field missing" }))
+      return
+    }
+  
+    if (!channels.has(channelName)) {
+        res.send(JSON.stringify({ success: false, reason: "Channel does not exist" }))
+        return
+    }
+  
+    if (!usersInChannel.has(tokenId+channelName)) {
+      res.send(JSON.stringify({ success: false, reason: "User is not part of this channel" }))
+      return
+    }
+  
+    console.log("USERS IN CHANNEL BEFORE REMOVAL: ")
+    console.log(usersInChannel)
+    usersInChannel.delete(tokenId+channelName)
+    res.send(JSON.stringify({ success: true }))
+    console.log("USERS IN CHANNEL AFTER REMOVAL: ")
+    console.log(usersInChannel)
+  
+})
 
 
 // listen for requests :)
