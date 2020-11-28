@@ -76,7 +76,7 @@ app.post("/login", (req, res) => {
     }
   
     token = username + Math.random().toString(36).substr(2)
-    tokens.set(token, username)
+    tokens.set(username, token)
     console.log("TOKENS: ")
     console.log(tokens)
     res.send(JSON.stringify({ success: true, token: token }))
