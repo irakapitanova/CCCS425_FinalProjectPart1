@@ -1,4 +1,4 @@
-// server.js
+/// server.js
 // where your node app starts
 
 // we've started you off with Express (https://expressjs.com/)
@@ -206,6 +206,7 @@ app.post("/leave-channel", (req, res) => {
   
 })
 
+// REPLACE joined WITH THE usersInChannel
 //The joined endpoint provides the usernames of everyone in the channel.
 app.get("/joined", (req, res) => {
     let channelName = req.query.channelName
@@ -281,6 +282,52 @@ app.post("/delete", (req, res) => {
     channels.delete(channelName)
     res.send(JSON.stringify({ success: true}))
     console.log("CHANNELS: " + channels)
+})
+
+//The kick endpoint lets users kick someone off of a channel.
+app.post("/kick", (req, res) => {
+    let parsed = JSON.parse(req.body)
+    let channelName = parsed.channelName
+    let target = parsed.target
+    let tokenId = req.headers.token
+    
+    if (tokenId == undefined) {
+      res.send(JSON.stringify({ success: false, reason: "token field missing" }))
+      return
+    }
+  
+    if (!tokens.has(tokenId)) {
+      res.send(JSON.stringify({ success: false, reason: "Invalid token" }))
+      return
+    }
+  
+    if (channelName == undefined) {
+      res.send(JSON.stringify({ success: false, reason: "channelName field missing" }))
+      return
+    }
+  
+    if (target == undefined) {
+      res.send(JSON.stringify({ success: false, reason: "target field missing" }))
+      return
+    }
+  
+    if (!channels.has(channelName)) {
+        res.send(JSON.stringify({ success: false, reason: "Channel does not exist" }))
+        return
+    }
+  
+    if (channels.get(channelName) != tokenId) {
+      res.send(JSON.stringify({ success: false, reason: "Channel not owned by user" }))
+      return
+    }
+  
+    
+    console.log("USERS IN CHANNEL BEFORE REMOVAL: ")
+    console.log(usersInChannel)
+    usersInChannel.delete(tokenId+channelName)
+    res.send(JSON.stringify({ success: true }))
+    console.log("USERS IN CHANNEL AFTER REMOVAL: ")
+    console.log(usersInChannel)
 })
 
 
