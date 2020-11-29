@@ -16,7 +16,7 @@ app.use(bodyParser.raw({ type: "*/*" }))
 
 let credentials = new Map()
 let tokens = new Map()
-let channels = new Set()
+let channels = new Map()
 let usersInChannel = new Map()
 let joined = []
 
@@ -116,7 +116,7 @@ app.post("/create-channel", (req, res) => {
         return
     }
   
-    channels.add(channelName)
+    channels.set(channelName, tokenId)
     res.send(JSON.stringify({ success: true }))
     console.log("CHANNELS: ")
     console.log(channels)
@@ -243,8 +243,44 @@ app.get("/joined", (req, res) => {
       }
     }
     console.log("LIST: " + list)
-    //res.send(JSON.stringify({ success: true, joined: JSON.stringify(list)}))
     res.send(JSON.stringify({ success: true, joined: list}))
+})
+
+//The delete endpoint lets users delete a channel that they had previously created.
+app.post("/delete", (req, res) => {
+    let parsed = JSON.parse(req.body)
+    let channelName = parsed.channelName
+    let tokenId = req.headers.token
+    
+    if (tokenId == undefined) {
+      res.send(JSON.stringify({ success: false, reason: "token field missing" }))
+      return
+    }
+  
+    if (!tokens.has(tokenId)) {
+      res.send(JSON.stringify({ success: false, reason: "Invalid token" }))
+      return
+    }
+  
+    if (channelName == undefined) {
+      res.send(JSON.stringify({ success: false, reason: "channelName field missing" }))
+      return
+    }
+  
+    if (!channels.has(channelName)) {
+        res.send(JSON.stringify({ success: false, reason: "Channel does not exist" }))
+        return
+    }
+  
+    if (channels.get(channelName) != tokenId) {
+      res.send(JSON.stringify({ success: false, reason: "User is not the owner of this channel" }))
+      return
+    }
+  
+    console.log("CHANNELS: " + channels)
+    channels.delete(channelName)
+    res.send(JSON.stringify({ success: true}))
+    console.log("CHANNELS: " + channels)
 })
 
 
