@@ -5,15 +5,14 @@
 // but feel free to use whatever libraries or frameworks you'd like through `package.json`.
 const express = require("express");
 const app = express();
+const cors = require('cors')
+app.use(cors())
 
-//let cors = require('cors')
-//app.use(cors())
+let morgan = require('morgan')
+app.use(morgan('combined'))
 
-//let morgan = require('morgan')
-//app.use(morgan('combined'))
-
-//let bodyParser = require('body-parser')
-//app.use(bodyParser.raw({ type: "*/*" }))
+let bodyParser = require('body-parser')
+app.use(bodyParser.raw({ type: "*/*" }))
 
 let credentials = new Map()
 let tokens = new Map()
@@ -520,4 +519,7 @@ app.get("/messages", (req, res) => {
     res.send(JSON.stringify(response))
 })
 
-app.listen(process.env.PORT || 3000)
+// listen for requests :)
+const listener = app.listen(process.env.PORT, () => {
+  console.log("Your app is listening on port " + listener.address().port);
+});
